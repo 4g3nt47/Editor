@@ -2,17 +2,15 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent){
 
+  editor = new Editor(this);
+  connect(editor, &Editor::documentModified, this, &MainWindow::setWindowModified);
+  connect(editor, &Editor::showStatusMessage, this, &MainWindow::showStatusMessage);
+
   setupWindow();
   setWindowIcon(QIcon(":/images/icon.png"));
-  setMinimumSize(600, 450);
-
-  textEdit = new QTextEdit(this);
-  textEdit->setAcceptRichText(true);
-  textEdit->setFont(QFont("monospace", 14));
-  textEdit->setStyleSheet("background-color: #1f1e2f; color: #F8F853;");
-  connect(textEdit, &QTextEdit::textChanged, this, &MainWindow::textChanged);
-  setCentralWidget(textEdit);
-  setCurrentFile("");
+  setWindowTitle(tr("Untitled[*] - Editor"));
+  setMinimumSize(800, 550);
+  setCentralWidget(editor);
 }
 
 MainWindow::~MainWindow(){
@@ -26,7 +24,7 @@ void MainWindow::setupWindow(){
   newAction->setShortcut(QKeySequence::New);
   newAction->setIcon(QIcon(":/images/new.png"));
   newAction->setStatusTip("Create a new file");
-  connect(newAction, &QAction::triggered, this, &MainWindow::createNewFile);
+  connect(newAction, &QAction::triggered, this, &MainWindow::createNewDocument);
 
   openAction = new QAction(tr("&Open"), this);
   openAction->setShortcut(QKeySequence::Open);
@@ -38,13 +36,13 @@ void MainWindow::setupWindow(){
   saveAction->setShortcut(QKeySequence::Save);
   saveAction->setIcon(QIcon(":/images/save.png"));
   saveAction->setStatusTip("Save changes to file");
-  connect(saveAction, &QAction::triggered, this, &MainWindow::saveFile);
+  connect(saveAction, &QAction::triggered, editor, &Editor::saveFile);
 
   saveAsAction = new QAction(tr("Save as"), this);
   saveAsAction->setShortcut(QKeySequence::SaveAs);
   saveAsAction->setIcon(QIcon(":/images/save.png"));
   saveAsAction->setStatusTip("Save changes to another file");
-  connect(saveAsAction, &QAction::triggered, this, &MainWindow::saveFileAs);
+  connect(saveAsAction, &QAction::triggered, editor, &Editor::saveFileAs);
 
   exitAction = new QAction(tr("&Exit"), this);
   exitAction->setShortcut(tr("Ctrl+X"));
@@ -53,7 +51,7 @@ void MainWindow::setupWindow(){
 
   aboutAction = new QAction(tr("&About Editor"), this);
   aboutAction->setStatusTip("About the Editor");
-  connect(aboutAction, &QAction::triggered, this, &MainWindow::about);
+  connect(aboutAction, &QAction::triggered, editor, &Editor::about);
 
   aboutQtAction = new QAction(tr("About Qt"), this);
   aboutQtAction->setStatusTip("About the Qt library");
@@ -85,116 +83,37 @@ void MainWindow::setupWindow(){
   statusBar();
 }
 
-void MainWindow::setCurrentFile(const QString &filename){
-
-  this->currentFile = filename;
-  setWindowTitle(tr("%1[*] - Editor").arg(getBaseFilename(this->currentFile.isEmpty() ? "Untitled" : this->currentFile)));
-}
-
-bool MainWindow::createNewFile(){
-
-  if (!canCloseDocument())
-    return false;
-  textEdit->setText("");
-  setCurrentFile("");
-  setWindowModified(false);
-  return true;
+void MainWindow::createNewDocument(){
+  MainWindow *mw = new MainWindow(this);
+  mw->show();
 }
 
 bool MainWindow::openFile(){
 
-  if (!canCloseDocument())
-    return false;
-  QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), ".", tr("Text files (*.txt)"));
-  if (!filename.isEmpty()){
-    statusBar()->showMessage("Opening file...", 2000);
-    QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly)){
-      QMessageBox::warning(this, "Editor", tr("Error reading file: %1\nReason: %2").arg(getBaseFilename(filename)).arg(file.errorString()));
-      return false;
+  if (editor->isWindowModified()){ // Unsaved changes. Create a new window.
+    MainWindow *mw = new MainWindow(this);
+    if (mw->openFile()){
+      mw->show(); // Successful load. Show the window.
+      return true;
     }
-    setCurrentFile(filename);
-    QByteArray bytes = file.readAll();
-    textEdit->setText(QString::fromStdString(bytes.toStdString()));
-    statusBar()->showMessage(tr("File opened: %1").arg(getBaseFilename(filename)));
-    setWindowModified(false);
-  }
-  return false;
-}
-
-bool MainWindow::saveFile(){
-
-  QString filename = currentFile;
-  if (filename.isEmpty())
-    filename = QFileDialog::getSaveFileName(this, tr("Save file"), ".", tr("Text files (*.txt)"));
-  if (!filename.isEmpty()){
-    statusBar()->showMessage("Saving file...", 2000);
-    if (!writeToFile(filename))
-      return false;
-    setCurrentFile(filename);
-    setWindowModified(false);
-    statusBar()->showMessage("File saved successfully!", 2000);
-    return true;
-  }
-  return false;
-}
-
-bool MainWindow::saveFileAs(){
-
-  QString filename = QFileDialog::getSaveFileName(this, tr("Save file as"), ".", tr("Text files (*.txt)"));
-  if (!filename.isEmpty()){
-    statusBar()->showMessage("Saving file...", 2000);
-    if (!writeToFile(filename))
-      return false;
-    setCurrentFile(filename);
-    setWindowModified(false);
-    statusBar()->showMessage("File saved successfully!", 2000);
-  }
-  return false;
-}
-
-bool MainWindow::writeToFile(const QString &filename){
-
-  QFile file(filename);
-  if (!file.open(QIODevice::WriteOnly)){
-    QMessageBox::warning(this, "Editor", tr("Error writing to file: %1\nReason: %2").arg(getBaseFilename(filename)).arg(file.errorString()));
+    // Failed to load file. Delete the new window.
+    delete mw;
     return false;
   }
-  file.write(textEdit->toPlainText().toStdString().c_str());
-  file.close();
-  return true;
+  // Working with unchanged document. Reuse the current window.
+  return editor->openFile();
 }
 
-void MainWindow::textChanged(){
-  setWindowModified(true);
-}
-
-bool MainWindow::canCloseDocument(){
-
-  if (!isWindowModified())
-    return true;
-  int choice = QMessageBox::warning(this, tr("Editor"), tr("You have made some unsaved changes.\nWould you like to save?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-  if (choice == QMessageBox::Yes)
-    return saveFile();
-  else if (choice == QMessageBox::No)
-    return true;
-  return false;
-}
-
-QString MainWindow::getBaseFilename(const QString &filename){
-  return QFileInfo(filename).fileName();
-}
-
-void MainWindow::about(){
-  QMessageBox::about(this, tr("About Editor"), tr("<h2>Editor v1.0</h2>"
-                                                  "<p>Editor is a simple text editor written in Qt5"
-                                                  "<p>Copyright &copy; 2024 <a href='https://github.com/4g3nt47'>Umar Abdul</a></p>"));
+void MainWindow::showStatusMessage(const QString &msg, int delay){
+  statusBar()->showMessage(msg, delay);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event){
 
-  if (canCloseDocument())
+  if (editor->canCloseDocument()){
+    editor->documentClosed();
     event->accept();
-  else
+  }else{
     event->ignore();
+  }
 }

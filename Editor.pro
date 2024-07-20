@@ -11,10 +11,12 @@ CONFIG += c++11
 INCLUDEPATH += $$PWD/include
 
 SOURCES += \
+    src/editor.cpp \
     src/main.cpp \
     src/mainwindow.cpp
 
 HEADERS += \
+    include/editor.h \
     include/mainwindow.h
 
 # Default rules for deployment.
