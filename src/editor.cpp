@@ -7,7 +7,7 @@ Editor::Editor(QWidget *parent) : QTextEdit(parent){
   setAcceptRichText(true);
   setAcceptRichText(true);
   setFont(QFont("monospace", 14));
-  setStyleSheet("background-color: #1f1e2f; color: #F8F853;");
+  setStyleSheet("QTextEdit{ background-color: #1f1e2f; color: #F8F853; }");
   setCurrentFile("");
   connect(this, &QTextEdit::textChanged, this, &Editor::textChanged);
 }
