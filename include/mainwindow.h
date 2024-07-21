@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include <QMainWindow>
+#include <QSettings>
 #include <QFont>
 #include <QMenu>
 #include <QMenuBar>
@@ -30,6 +31,8 @@ class MainWindow : public QMainWindow{
   private:
 
     QAction *newAction, *openAction, *saveAction, *saveAsAction, *exitAction;
+    QAction *lineWrapAction;
+    QAction *themeActions[3];
     QAction *aboutAction, *aboutQtAction;
     Editor *editor;
 
@@ -38,14 +41,21 @@ class MainWindow : public QMainWindow{
      */
     void setupWindow();
 
+    void saveSettings();
+
+    void loadSettings();
+
   private slots:
 
     void createNewDocument();
     bool openFile();
+    bool setThemeByName(const QString &themeName);
 
   public slots:
 
     void showStatusMessage(const QString &msg, int delay = 2000);
+    void toggleLineWrap(bool checked);
+    void changeTheme(bool checked);
 
   protected:
 

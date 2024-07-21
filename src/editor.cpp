@@ -18,7 +18,6 @@ void Editor::setupEditor(){
   setAcceptRichText(true);
   setAcceptRichText(true);
   setFont(QFont("monospace", 14));
-  setStyleSheet("QTextEdit{ background-color: #1f1e2f; color: #F8F853; }");
   setCurrentFile("");
   connect(this, &QTextEdit::textChanged, this, &Editor::textChanged);
 }

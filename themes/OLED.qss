@@ -1,0 +1,7 @@
+* {
+  background-color: #000000; color: #00FF82;
+}
+
+QTextEdit{
+  border: 1px solid #00FF82; margin: 5px 5px 0px 5px; padding: 5px;
+}

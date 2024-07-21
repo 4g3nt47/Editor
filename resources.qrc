@@ -5,5 +5,8 @@
         <file>images/open.png</file>
         <file>images/save.png</file>
         <file>images/splash.png</file>
+        <file>themes/default.qss</file>
+        <file>themes/OLED.qss</file>
+        <file>themes/PurpleShades.qss</file>
     </qresource>
 </RCC>

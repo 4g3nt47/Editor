@@ -31,38 +31,55 @@ void MainWindow::setupWindow(){
   newAction = new QAction(tr("&New"), this);
   newAction->setShortcut(QKeySequence::New);
   newAction->setIcon(QIcon(":/images/new.png"));
-  newAction->setStatusTip("Create a new file");
+  newAction->setStatusTip(tr("Create a new file"));
   connect(newAction, &QAction::triggered, this, &MainWindow::createNewDocument);
 
   openAction = new QAction(tr("&Open"), this);
   openAction->setShortcut(QKeySequence::Open);
   openAction->setIcon(QIcon(":/images/open.png"));
-  openAction->setStatusTip("Open an existing file");
+  openAction->setStatusTip(tr("Open an existing file"));
   connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
 
   saveAction = new QAction(tr("&Save"), this);
   saveAction->setShortcut(QKeySequence::Save);
   saveAction->setIcon(QIcon(":/images/save.png"));
-  saveAction->setStatusTip("Save changes to file");
+  saveAction->setStatusTip(tr("Save changes to file"));
   connect(saveAction, &QAction::triggered, editor, &Editor::saveFile);
 
   saveAsAction = new QAction(tr("Save as"), this);
   saveAsAction->setShortcut(QKeySequence::SaveAs);
   saveAsAction->setIcon(QIcon(":/images/save.png"));
-  saveAsAction->setStatusTip("Save changes to another file");
+  saveAsAction->setStatusTip(tr("Save changes to another file"));
   connect(saveAsAction, &QAction::triggered, editor, &Editor::saveFileAs);
 
   exitAction = new QAction(tr("&Exit"), this);
   exitAction->setShortcut(tr("Ctrl+X"));
-  exitAction->setStatusTip("Close application");
+  exitAction->setStatusTip(tr("Close application"));
   connect(exitAction, &QAction::triggered, this, &MainWindow::close);
 
+  lineWrapAction = new QAction(tr("Line wrap"), this);
+  lineWrapAction->setCheckable(true);
+  lineWrapAction->setChecked(true);
+  lineWrapAction->setStatusTip(tr("Enable/disable line wrapping"));
+  connect(lineWrapAction, &QAction::toggled, this, &MainWindow::toggleLineWrap);
+
+  const char *themeNames[] = {"default", "Purple Shades", "OLED"};
+  for (int i = 0; i < 3; i++){
+    QAction *action = new QAction(tr(themeNames[i]), this);
+    action->setCheckable(true);
+    action->setChecked(i == 0);
+    action->setData(themeNames[i]);
+    action->setStatusTip(tr("Enable %1 theme").arg(themeNames[i]));
+    connect(action, &QAction::toggled, this, &MainWindow::changeTheme);
+    themeActions[i] = action;
+  }
+
   aboutAction = new QAction(tr("&About Editor"), this);
-  aboutAction->setStatusTip("About the Editor");
+  aboutAction->setStatusTip(tr("About Editor"));
   connect(aboutAction, &QAction::triggered, editor, &Editor::about);
 
   aboutQtAction = new QAction(tr("About Qt"), this);
-  aboutQtAction->setStatusTip("About the Qt library");
+  aboutQtAction->setStatusTip(tr("About the Qt library"));
   connect(aboutQtAction, &QAction::triggered, qApp, &QApplication::aboutQt);
 
   // Create menus
@@ -75,20 +92,49 @@ void MainWindow::setupWindow(){
   fileMenu->addSeparator();
   fileMenu->addAction(exitAction);
 
+  QMenu *settingsMenu = menuBar()->addMenu(tr("&Settings"));
+  settingsMenu->addAction(lineWrapAction);
+  QMenu *themesMenu = settingsMenu->addMenu("Themes");
+  for (int i = 0; i < 3; i++)
+    themesMenu->addAction(themeActions[i]);
+
+  menuBar()->addSeparator();
   QMenu *aboutMenu = menuBar()->addMenu(tr("&About"));
   aboutMenu->addAction(aboutAction);
   aboutMenu->addAction(aboutQtAction);
 
   // Create tool bar.
-
   QToolBar *fileToolBar = addToolBar(tr("&File"));
   fileToolBar->addAction(newAction);
   fileToolBar->addAction(openAction);
   fileToolBar->addAction(saveAction);
 
   // Create status bar.
-
   statusBar();
+
+  // Load application settings.
+  loadSettings();
+}
+
+void MainWindow::saveSettings(){
+
+  qDebug() << "Saving application settings...";
+  QSettings settings("Umar Abdul", "Editor");
+  settings.setValue("line wrap", lineWrapAction->isChecked());
+  for (int i = 0; i < 3; i++){
+    if (themeActions[i]->isChecked()){
+      settings.setValue("theme", themeActions[i]->data().toString());
+      break;
+    }
+  }
+}
+
+void MainWindow::loadSettings(){
+
+  qDebug() << "Loading application settings...";
+  QSettings settings("Umar Abdul", "Editor");
+  lineWrapAction->setChecked(settings.value("line wrap", true).toBool());
+  setThemeByName(settings.value("theme", "default").toString());
 }
 
 void MainWindow::createNewDocument(){
@@ -112,13 +158,67 @@ bool MainWindow::openFile(){
   return editor->openFile();
 }
 
+bool MainWindow::setThemeByName(const QString &themeName){
+
+  // Uncheck all other theme actions.
+  for (int i = 0; i < 3; i++){
+    QAction *action = themeActions[i];
+    if (action->data().toString() != themeName){
+      action->setChecked(false);
+    }else{
+      if (!action->isChecked()){ // Selected theme is unchecked. Happens on startup when we load selected theme from saved application settings.
+        disconnect(action, &QAction::toggled, this, &MainWindow::changeTheme); // Disconnect the handler temporarily to avoid a double call.
+        action->setChecked(true);
+        connect(action, &QAction::toggled, this, &MainWindow::changeTheme); // Reconnect :)
+      }
+    }
+
+  }
+  // Load and apply the selected theme.
+  QString themeFile = ":/themes/default.qss";
+  if (themeName == "OLED")
+    themeFile = ":/themes/OLED.qss";
+  else if (themeName == "Purple Shades")
+    themeFile = ":/themes/PurpleShades.qss";
+  QFile file(themeFile);
+  file.open(QIODevice::ReadOnly);
+  if (!file.isOpen()){
+    QMessageBox::warning(this, "Editor", "Error loading theme!\nCheck your application resource file.");
+    return false;
+  }
+  setStyleSheet(QString::fromStdString(file.readAll().toStdString()));
+  file.close();
+  return true;
+}
+
 void MainWindow::showStatusMessage(const QString &msg, int delay){
   statusBar()->showMessage(msg, delay);
+}
+
+void MainWindow::toggleLineWrap(bool checked){
+
+  editor->setLineWrapMode(checked ? QTextEdit::WidgetWidth :  QTextEdit::NoWrap);
+  showStatusMessage(tr("Word wrapping %1!").arg(lineWrapAction->isChecked() ? "enabled" : "disabled"));
+}
+
+void MainWindow::changeTheme(bool checked){
+
+  if (!checked) // Theme was unchecked. Simply ignore (better way is to go with radio buttons).
+    return;
+  QAction *senderAction = qobject_cast<QAction *>(sender()); // Grab the event sender, which will be the QAction of the theme clicked.
+  if (senderAction){ // Slots can be used as normal functions, in which case they won't have an event sender.
+    QString themeName = senderAction->data().toString();
+    if (setThemeByName(themeName))
+      showStatusMessage("Theme loaded successfully!");
+    else
+      showStatusMessage("Error loading theme!");
+  }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event){
 
   if (editor->canCloseDocument()){
+    saveSettings();
     qInfo() << "Closing main window...";
     event->accept();
   }else{

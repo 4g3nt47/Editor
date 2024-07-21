@@ -5,7 +5,9 @@ int main(int argc, char *argv[]){
 
   QApplication app(argc, argv);
   app.setFont(QFont("helvetica", 11));
+  app.setStyle("breeze"); // Goes well with our custom themes.
 
+  QApplication::setOverrideCursor(Qt::WaitCursor); // Change cursor to indicate something is loading.
   QSplashScreen *splash = new QSplashScreen();
   splash->setPixmap(QPixmap(":/images/splash.png"));
   splash->setFixedSize(800, 550);
@@ -22,6 +24,7 @@ int main(int argc, char *argv[]){
 
   MainWindow *mainWindow = new MainWindow();
   mainWindow->show();
+  QApplication::restoreOverrideCursor(); // Revert back to normal cursor since we finished loading.
 
   splash->finish(mainWindow);
   delete splash;
