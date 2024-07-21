@@ -3,6 +3,8 @@
 
 #include <QApplication>
 #include <QMainWindow>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QSettings>
 #include <QFont>
 #include <QMenu>
@@ -14,6 +16,8 @@
 #include <QCloseEvent>
 #include <QSplashScreen>
 #include <QThread>
+#include <QLabel>
+#include <QLineEdit>
 #include "editor.h"
 
 /**
@@ -30,10 +34,13 @@ class MainWindow : public QMainWindow{
 
   private:
 
-    QAction *newAction, *openAction, *saveAction, *saveAsAction, *exitAction;
+    QAction *newAction, *openAction, *saveAction, *saveAsAction, *findAction, *exitAction;
     QAction *lineWrapAction;
     QAction *themeActions[3];
     QAction *aboutAction, *aboutQtAction;
+    QWidget *findAndReplaceWidget;
+    QLineEdit *findLineEdit, *replaceLineEdit;
+    QVBoxLayout *findLayout;
     Editor *editor;
 
     /**
@@ -56,6 +63,8 @@ class MainWindow : public QMainWindow{
     void showStatusMessage(const QString &msg, int delay = 2000);
     void toggleLineWrap(bool checked);
     void changeTheme(bool checked);
+    void toggleFind();
+    void findAndReplace();
 
   protected:
 

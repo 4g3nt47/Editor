@@ -136,6 +136,16 @@ bool Editor::writeToFile(const QString &filename){
   return true;
 }
 
+void Editor::findAndReplace(const QString &findStr, const QString &replaceStr){
+
+  if (findStr.isEmpty())
+    return;
+  QString str = toPlainText();
+  str.replace(findStr, replaceStr);
+  setText(str);
+  emit showStatusMessage("Keyword replaced!");
+}
+
 void Editor::documentClosed(){
   openedFiles.removeAll(currentFile);
 }

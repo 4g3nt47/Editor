@@ -18,9 +18,9 @@ int main(int argc, char *argv[]){
   // Show some dynamic messages in the flash screen.
   Qt::Alignment align = Qt::AlignTop | Qt::AlignRight;
   splash->showMessage(QObject::tr("Loading resources..."), align, Qt::white);
-  QThread::msleep(1000); // Simulate a load delay so user can see the splash screen
+  QThread::msleep(500); // Simulate a load delay so user can see the splash screen
   splash->showMessage("Starting the editor...", align, Qt::white);
-  QThread::msleep(1000);
+  QThread::msleep(500);
 
   MainWindow *mainWindow = new MainWindow();
   mainWindow->show();

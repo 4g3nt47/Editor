@@ -12,7 +12,44 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent){
   setupWindow();
   setWindowIcon(QIcon(":/images/icon.png"));
   setMinimumSize(800, 550);
-  setCentralWidget(editor);
+
+  QLabel *findLabel = new QLabel(tr("&Find:"), this);
+  findLabel->setMinimumWidth(80);
+  findLabel->setAlignment(Qt::AlignRight);
+  findLineEdit = new QLineEdit(this);
+  findLineEdit->setPlaceholderText(tr("Keyword..."));
+  findLabel->setBuddy(findLineEdit);
+  QLabel *replaceLabel = new QLabel(tr("&Replace:"), this);
+  replaceLabel->setMinimumWidth(findLabel->minimumWidth());
+  replaceLabel->setAlignment(Qt::AlignRight);
+  replaceLineEdit = new QLineEdit(this);
+  replaceLineEdit->setPlaceholderText(tr("Replace with..."));
+  replaceLabel->setBuddy(replaceLineEdit);
+
+  QHBoxLayout *l1 = new QHBoxLayout();
+  l1->addWidget(findLabel);
+  l1->addWidget(findLineEdit, 1);
+  QHBoxLayout *l2 = new QHBoxLayout();
+  l2->addWidget(replaceLabel);
+  l2->addWidget(replaceLineEdit, 1);
+  QVBoxLayout *l3 = new QVBoxLayout();
+  l3->addLayout(l1);
+  l3->addLayout(l2);
+
+  findAndReplaceWidget = new QWidget(this);
+  findAndReplaceWidget->setLayout(l3);
+  findAndReplaceWidget->setFont(QFont("helvetica", 9));
+  findAndReplaceWidget->hide();
+  QVBoxLayout *l4 = new QVBoxLayout();
+  l4->addWidget(editor);
+  l4->addWidget(findAndReplaceWidget);
+  QWidget *mainWidget = new QWidget(this);
+  mainWidget->setLayout(l4);
+
+  connect(findLineEdit, &QLineEdit::returnPressed, this, &MainWindow::findAndReplace);
+  connect(replaceLineEdit, &QLineEdit::returnPressed, this, &MainWindow::findAndReplace);
+
+  setCentralWidget(mainWidget);
 
   // Set this window to auto-delete itself (and all child widgets) when it's closed.
   // Very important for multi-window apps to avoid hogging memory.
@@ -52,6 +89,12 @@ void MainWindow::setupWindow(){
   saveAsAction->setStatusTip(tr("Save changes to another file"));
   connect(saveAsAction, &QAction::triggered, editor, &Editor::saveFileAs);
 
+  findAction = new QAction(tr("&Find and Replace"), this);
+  findAction->setShortcut(QKeySequence::Find);
+  findAction->setIcon(QIcon(":/images/search.png"));
+  findAction->setStatusTip(tr("Find and replace"));
+  connect(findAction, &QAction::triggered, this, &MainWindow::toggleFind);
+
   exitAction = new QAction(tr("&Exit"), this);
   exitAction->setShortcut(tr("Ctrl+X"));
   exitAction->setStatusTip(tr("Close application"));
@@ -90,6 +133,8 @@ void MainWindow::setupWindow(){
   fileMenu->addAction(saveAction);
   fileMenu->addAction(saveAsAction);
   fileMenu->addSeparator();
+  fileMenu->addAction(findAction);
+  fileMenu->addSeparator();
   fileMenu->addAction(exitAction);
 
   QMenu *settingsMenu = menuBar()->addMenu(tr("&Settings"));
@@ -114,6 +159,7 @@ void MainWindow::setupWindow(){
 
   // Load application settings.
   loadSettings();
+
 }
 
 void MainWindow::saveSettings(){
@@ -213,6 +259,17 @@ void MainWindow::changeTheme(bool checked){
     else
       showStatusMessage("Error loading theme!");
   }
+}
+
+void MainWindow::toggleFind(){
+
+  findAndReplaceWidget->setHidden(!findAndReplaceWidget->isHidden());
+  if (!findAndReplaceWidget->isHidden())
+    findLineEdit->setFocus();
+}
+
+void MainWindow::findAndReplace(){
+  editor->findAndReplace(findLineEdit->text(), replaceLineEdit->text());
 }
 
 void MainWindow::closeEvent(QCloseEvent *event){

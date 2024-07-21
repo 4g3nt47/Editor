@@ -8,5 +8,6 @@
         <file>themes/default.qss</file>
         <file>themes/OLED.qss</file>
         <file>themes/PurpleShades.qss</file>
+        <file>images/search.png</file>
     </qresource>
 </RCC>

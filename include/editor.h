@@ -47,10 +47,11 @@ class Editor : public QTextEdit{
 
     bool writeToFile(const QString &filename);
 
+    void findAndReplace(const QString &findStr, const QString &replaceStr);
+
     void documentClosed();
 
     void about();
-
 
   signals:
 
