@@ -11,6 +11,8 @@
 #include <QAction>
 #include <QKeySequence>
 #include <QCloseEvent>
+#include <QSplashScreen>
+#include <QThread>
 #include "editor.h"
 
 /**
