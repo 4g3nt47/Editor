@@ -15,14 +15,17 @@ class Editor : public QTextEdit{
 
   private:
 
-    static QStringList *openedFiles;
+    static QStringList openedFiles;
     QString currentFile;
     void setCurrentFile(const QString &filename);
 
   public:
 
     Editor(QWidget *parent = nullptr);
+
     ~Editor();
+
+    void setupEditor();
 
     void setDocumentModified(bool modified);
 
@@ -48,11 +51,12 @@ class Editor : public QTextEdit{
 
     void about();
 
+
   signals:
 
+    void updateWindowTitle(const QString &title);
     void documentModified(bool modified);
     void showStatusMessage(const QString &msg, int delay = 2000);
-
 
 };
 

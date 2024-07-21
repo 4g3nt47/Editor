@@ -1,8 +1,19 @@
 #include "editor.h"
+#include <QDebug>
 
-QStringList* Editor::openedFiles = new QStringList();
+QStringList Editor::openedFiles;
 
 Editor::Editor(QWidget *parent) : QTextEdit(parent){
+
+}
+
+Editor::~Editor(){
+
+  documentClosed();
+  qInfo() << "Editor closed!";
+}
+
+void Editor::setupEditor(){
 
   setAcceptRichText(true);
   setAcceptRichText(true);
@@ -12,20 +23,17 @@ Editor::Editor(QWidget *parent) : QTextEdit(parent){
   connect(this, &QTextEdit::textChanged, this, &Editor::textChanged);
 }
 
-Editor::~Editor(){
-  if (openedFiles){
-    delete openedFiles;
-    openedFiles = NULL;
-  }
-}
-
 void Editor::setCurrentFile(const QString &filename){
 
   if (!currentFile.isEmpty())
     documentClosed(); // Reusing a window. Remove the current filename from the list of opened files.
   currentFile = filename;
-  if (!currentFile.isEmpty())
-    openedFiles->append(currentFile);
+  if (!currentFile.isEmpty()){
+    openedFiles.append(currentFile);
+    emit updateWindowTitle(tr("%1[*] - Editor").arg(getBaseFilename(currentFile)));
+  }else{
+    emit updateWindowTitle(tr("Untitled[*] - Editor"));
+  }
 }
 
 void Editor::setDocumentModified(bool modified){
@@ -65,7 +73,7 @@ bool Editor::openFile(){
   QString filename = QFileDialog::getOpenFileName(this, tr("Open file"), ".", tr("Text files (*.txt)\n"
                                                                                  "All files (*.*)"));
   if (!filename.isEmpty()){
-    if (openedFiles->contains(filename)){
+    if (openedFiles.contains(filename)){
       QMessageBox::warning(this, tr("Editor"), tr("File is already open!"));
       return false;
     }
@@ -130,7 +138,7 @@ bool Editor::writeToFile(const QString &filename){
 }
 
 void Editor::documentClosed(){
-  openedFiles->removeAll(currentFile);
+  openedFiles.removeAll(currentFile);
 }
 
 void Editor::about(){

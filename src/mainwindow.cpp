@@ -1,20 +1,28 @@
 #include "mainwindow.h"
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent){
 
   editor = new Editor(this);
+  connect(editor, &Editor::updateWindowTitle, this, &MainWindow::setWindowTitle);
   connect(editor, &Editor::documentModified, this, &MainWindow::setWindowModified);
   connect(editor, &Editor::showStatusMessage, this, &MainWindow::showStatusMessage);
+  editor->setupEditor();
 
   setupWindow();
   setWindowIcon(QIcon(":/images/icon.png"));
-  setWindowTitle(tr("Untitled[*] - Editor"));
   setMinimumSize(800, 550);
   setCentralWidget(editor);
+
+  // Set this window to auto-delete itself (and all child widgets) when it's closed.
+  // Very important for multi-window apps to avoid hogging memory.
+  // WARNING: The widget will call `delete this` on itself when closed, so if the MainWindow object is created on stack,
+  // and not dynamically allocated, the program will SEGFAULT as it tries to free a stack address.
+  setAttribute(Qt::WA_DeleteOnClose);
 }
 
 MainWindow::~MainWindow(){
-
+  qDebug() << "Main window closed!";
 }
 
 void MainWindow::setupWindow(){
@@ -84,14 +92,14 @@ void MainWindow::setupWindow(){
 }
 
 void MainWindow::createNewDocument(){
-  MainWindow *mw = new MainWindow(this);
+  MainWindow *mw = new MainWindow();
   mw->show();
 }
 
 bool MainWindow::openFile(){
 
   if (editor->isWindowModified()){ // Unsaved changes. Create a new window.
-    MainWindow *mw = new MainWindow(this);
+    MainWindow *mw = new MainWindow();
     if (mw->openFile()){
       mw->show(); // Successful load. Show the window.
       return true;
@@ -111,7 +119,7 @@ void MainWindow::showStatusMessage(const QString &msg, int delay){
 void MainWindow::closeEvent(QCloseEvent *event){
 
   if (editor->canCloseDocument()){
-    editor->documentClosed();
+    qInfo() << "Closing main window...";
     event->accept();
   }else{
     event->ignore();
