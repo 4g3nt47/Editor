@@ -116,6 +116,7 @@ bool Editor::saveFileAs(){
     emit showStatusMessage("Saving file...");
     if (!writeToFile(filename))
       return false;
+    documentClosed();
     setCurrentFile(filename);
     setDocumentModified(false);
     emit showStatusMessage("File saved successfully!");
