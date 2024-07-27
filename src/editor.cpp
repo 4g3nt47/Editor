@@ -10,7 +10,7 @@ Editor::Editor(QWidget *parent) : QTextEdit(parent){
 Editor::~Editor(){
 
   documentClosed();
-  qInfo() << "Editor closed!";
+  qDebug() << "Editor closed!";
 }
 
 void Editor::setupEditor(){

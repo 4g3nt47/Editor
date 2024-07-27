@@ -276,7 +276,7 @@ void MainWindow::closeEvent(QCloseEvent *event){
 
   if (editor->canCloseDocument()){
     saveSettings();
-    qInfo() << "Closing main window...";
+    qDebug() << "Closing main window...";
     event->accept();
   }else{
     event->ignore();
